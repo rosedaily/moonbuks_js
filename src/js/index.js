@@ -1,29 +1,23 @@
-// TODO localStorage Read & Write
-// - [O]  localStorage에 데이터를 저장한다.
-//  - [O]  메뉴를 추가할 때
-//  - [o]  메뉴를 수정할 때
-//  - [O]  메뉴를 삭제할 때
-// - [O]  localStorage에 저장된 데이터를 읽어온다.
-
-// TODO 카테고리별 메뉴판 관리
-// - [O]  에스프레소 메뉴판 관리 
-// - [o]  프라푸치노 메뉴판 관리
-// - [o]  블렌디드 메뉴판 관리
-// - [o]  티바나 메뉴판 관리 
-// - [o]  디저트 메뉴판 관리
-
-// TODO 페이지 접근시 최초 데이터 Read & Rendering
-// - [o]  페이지에 최초로 로딩될 떄 lacalStorage에 에스프레소 메뉴를 읽어온다.
-// - [o]  에스프레소 메뉴를 페이지에 그려준다.
-
-// TODO 품절 상태 관리
-// - [o]  품절 상태인 경우를 보여줄 수 있게, 품절 버튼을 추가하고 sold-out class를 추가하여 상태를 변경한다.
-// - [o]  품절 버튼을 추가한다.
-// - [o]  품절 버튼을 클릭하면 lacalStorage에 상태값이 저장된다.
-// - [o]  클릭이벤트에서 가장 가까움 li태그의 class속성 값에 sold-out을 추가한다.
-
 import { $ } from "./utils/dom.js";
 import store from "./store/index.js";
+
+// TODO 서버 요청부분
+// - [] 웹서버를 띄운다.  
+// - [] 서버에 새로운 메뉴가 추가될 수 있도록 요청한다.
+// - [] 서버에 카테고리별 메뉴리스트를 불러온다,
+// - [] 서버에 메뉴가 수정 될 수 있도록 요청한다.
+// - [] 서버에 메뉴의 품절상태가 토글될 수 있도록 요청한다.
+// - [] 서버에 메뉴가 삭제될 수 있도록 요청한다.
+
+// TODO 리팩터링 부분
+// - [] localStorage에 저장하는 로직은 지운다.
+// - [] fetch 비동기 api를 사용하는 부분을 async await을 사용하여 구현한다.
+
+// TODO 사용자 경험
+// - [] API 통신이 실패하는 경우에 대해 사용자가 알 수 있게 alert으로 예외처리를 진행한다.
+// - [] 중복되는 메뉴는 추가할 수 없다.
+const BASE_URL = "http://localhost:3000/api"
+// fetch('/', option); //요청을 보내기 위한 url, 요청하는 옵션들
 
 function App() {
   this.menu = {
@@ -79,14 +73,39 @@ function App() {
     $(".menu-count").innerText = `총 ${menuCount}개`;
   }
 
-  const addMenuName = () => {
+  /* async, await 여러개의 비동기 통신을 할 때, 
+  대기, 완료 후 다음 처리 진행하도록 해줌.
+  그렇지 않으면 앞에서 완료가 되기 전에 다음 처리가 진행 될 수 있음 */
+  const addMenuName = async () => {
     if($("#menu-name").value === ""){
       alert("값을 입력해주세요.");
       return;
     }
 
     const menuName = $("#menu-name").value;
-    this.menu[this.currentCategory].push({ name: menuName });
+    // this.menu[this.currentCategory].push({ name: menuName }); // api를 사용해서 웹서버 등록
+    await fetch(`${BASE_URL}/category/${this.currentCategory}/menu`,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+      },
+      body:JSON.stringify({name:menuName}),
+    })
+    .then((response) => {
+      return response.json();
+      })
+
+    await fetch(`${BASE_URL}/category/${this.currentCategory}/menu`)
+      .then((response) => {
+      return response.json();
+      })
+      .then((data) =>{
+        console.log(data);
+        this.menu[this.currentCategory] = data;
+        render();
+        $("#menu-name").value = "";
+      });
+    
     store.setLocalStorage(this.menu);
     render();
     $("#menu-name").value = "";
